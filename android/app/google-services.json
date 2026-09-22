@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "699692914844",
+    "project_id": "contento-1df87",
+    "storage_bucket": "contento-1df87.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:699692914844:android:e978f0c20d9d98eb573559",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3FT6aO9V4d5bfTrCOmDkXP8FBwFS2EpU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

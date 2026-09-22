@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myEmployeeDoc() {
+      return get(/databases/$(database)/documents/employees/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return signedIn() && myEmployeeDoc().data.role == 'admin';
+    }
+
+    function ownsProject(projectId) {
+      return signedIn() &&
+        get(/databases/$(database)/documents/projects/$(projectId)).data.employeeId == request.auth.uid;
+    }
+
+    // employees/{uid} — the account roster. No client-side self-write at
+    // all (including on create) — that's what would let anyone hand
+    // themselves the admin role. The very first admin account is created
+    // manually in the Firebase console (see project README); every
+    // account after that is provisioned through the app's Add Employee
+    // flow, which is always driven by an already-signed-in admin.
+    match /employees/{uid} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // projects/{projectId} — one project per employee. Admins manage
+    // projects; the assigned employee can read their own.
+    match /projects/{projectId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // posts/{postId} — admins see/manage everything. Employees can read
+    // and write posts under their own project (this is how "New Post"
+    // and "Save Draft" / "Submit for Review" work from the employee
+    // side), but status transitions to Approved/Needs Revision are
+    // admin-only — enforced by only allowing employees to touch a fixed
+    // field set that never includes `status` set to those values.
+    match /posts/{postId} {
+      allow read: if signedIn();
+
+      allow create: if isAdmin() ||
+        (signedIn() && ownsProject(request.resource.data.projectId) &&
+         request.resource.data.status in ['pending', 'submitted']);
+
+      allow update: if isAdmin() ||
+        (signedIn() && ownsProject(resource.data.projectId) &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['caption', 'imageUrl', 'notes', 'status', 'submittedAt', 'feedback']) &&
+         request.resource.data.status in ['pending', 'submitted']);
+
+      allow delete: if false;
+    }
+  }
+}
